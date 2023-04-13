@@ -2,12 +2,14 @@ const express = require('express')
 const app = express()
 const mongoose = require('mongoose')
 const blogRoutes = require('./routes/blog')
+const authRoutes = require('./routes/auth')
 
 
 
 // middlewares
 app.use(express.json())
 app.use('/api/blogs',blogRoutes)
+app.use('/api/auth',authRoutes)
 
 
 
