@@ -40,9 +40,9 @@ router.post('/login', async (req, res) => {
         }
 
         // Match Password
-        const isMatched = await bcrypt.compare(password,foundUser.password)
+        const isMatched = await bcrypt.compare(password, foundUser.password)
 
-        if(!isMatched){
+        if (!isMatched) {
             return (res.status(404).json({
                 success: false,
                 message: "Invalid Usernam or Password"
@@ -51,7 +51,7 @@ router.post('/login', async (req, res) => {
 
 
         // generate jwt
-        const token = await jwt.sign({username:foundUser.username,email:foundUser.email},"abc",{'expiresIn':"1d"})
+        const token = await jwt.sign({ username: foundUser.username, email: foundUser.email }, "abc", { 'expiresIn': "20s" })
 
 
         res.status(201).json({
@@ -71,29 +71,72 @@ router.post('/login', async (req, res) => {
 })
 
 
-router.delete('/delUser/:id',async(req,res)=>{
-    var token = req.headers.token
-    
-
-    // checkToken
-    var isTokenOk = await jwt.verify(token,"abc")
-
-    if(!isTokenOk){
+var checkAdmin = async (req, res, next) => {
+    try {
+        var token = req.headers.token
+        var decodedUser = await jwt.verify(token, "abc")
+        if (decodedUser.username === "admin") {
+            next()
+        } else {
+            return (res.status(403).json({
+                success: false,
+                message: "You are not Authorized"
+            }))
+        }
+    } catch (error) {
         return (res.status(403).json({
             success: false,
             message: "Invalid Token Passed"
         }))
     }
 
-    // if admin
+}
+
+
+router.delete('/delUser/:id', checkAdmin, async (req, res) => {
+    // checkToken
+
     try {
-        const decodedToken = await jwt.decode(token)
-        console.log(decodedToken)
+
+        const foundUser = await userModal.findById(req.params.id)
+
+        if (!foundUser) {
+            return (res.status(404).json({
+                success: false,
+                message: "User with this ID not Found"
+            }))
+        }
+
+        await userModal.findByIdAndDelete(req.params.id)
+        res.status(200).json({
+            success: true,
+            message: "User Deleted Successfully!"
+        })
+
+
     } catch (error) {
-        console.log(error)
+        res.status(500).json({
+            success: false,
+            message: "Something went wrong!"
+        })
     }
 
+})
 
+
+router.get('/getUsers',checkAdmin,async (req,res)=>{
+    try {
+        var users = await userModal.find()
+        res.status(200).json({
+            success:true,
+            message:users
+        })
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Something went wrong!"
+        })
+    }
 })
 
 
